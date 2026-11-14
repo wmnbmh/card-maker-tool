@@ -10,18 +10,25 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 
+html,body{height:100%;overflow:hidden;touch-action:manipulation;overscroll-behavior:none;-webkit-text-size-adjust:100%;}
+html{background:#0f0f12;}
+
 /* ===== 强制衬线体（宋体） ===== */
 body,#txt,#t1,#t2,#ta,#vBtn,#save,#payBox,.swn{
-  font-family:"Noto Serif SC","Songti SC","STSong","Source Han Serif SC",SimSun,Georgia,serif !important;
+  font-family:serif !important;
+  font-family:"Noto Serif SC","Songti SC","STSong","Source Han Serif SC",SimSun,serif !important;
 }
 
-html,body{height:100%;overflow:hidden;background:#0f0f12;touch-action:manipulation;overscroll-behavior:none;-webkit-text-size-adjust:100%;}
 body{
   color:#e9e9ee;
+  background-color:#0f0f12;
+  background-repeat:no-repeat;
+  background-size:cover;
+  background-position:center;
   user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
 }
 
-/* ===== 背景模糊光斑（两个圆形 div） ===== */
+/* ===== 底层模糊光斑 ===== */
 #glowA,#glowB{
   position:fixed;z-index:0;border-radius:50%;
   filter:blur(80px);
@@ -29,11 +36,11 @@ body{
 }
 #glowA{
   width:72vw;height:72vw;left:-22vw;top:-16vw;
-  background:radial-gradient(circle at 45% 45%,rgba(104,92,255,.60) 0%,rgba(104,92,255,0) 70%);
+  background:radial-gradient(circle at 45% 45%,rgba(120,110,255,.65) 0%,rgba(120,110,255,0) 70%);
 }
 #glowB{
   width:68vw;height:68vw;right:-24vw;bottom:-16vw;
-  background:radial-gradient(circle at 55% 45%,rgba(0,198,178,.50) 0%,rgba(0,198,178,0) 70%);
+  background:radial-gradient(circle at 55% 45%,rgba(0,205,185,.55) 0%,rgba(0,205,185,0) 70%);
 }
 
 #app{
@@ -52,26 +59,33 @@ body{
   background:radial-gradient(circle,rgba(255,255,255,.08) 0%,rgba(255,255,255,0) 70%);
   filter:blur(18px);pointer-events:none;
 }
-#capture-area{position:relative;}
-#bgLayer{position:absolute;inset:0;z-index:0;overflow:hidden;}
 
-/* ===== 卡片：毛玻璃 + 发光边框 + 阴影（强制） ===== */
-#card{
-  position:absolute;inset:0;z-index:1;overflow:hidden;isolation:isolate;
-  background:rgba(255, 255, 255, 0.05) !important;
+/* ===== 卡片本体：全透明毛玻璃（无任何渐变） ===== */
+#capture-area{
+  position:relative;
+  overflow:hidden;
+  isolation:isolate;
+  background: rgba(255, 255, 255, 0.05) !important;
   -webkit-backdrop-filter:blur(15px) !important;
   backdrop-filter: blur(15px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+  border: 1px solid rgba(255,255,255,0.3) !important;
   box-shadow: 0 20px 50px rgba(0,0,0,0.5) !important;
-  color:#1b1b1f;
 }
-#card.capture{
+#capture-area.capture{
   border-color:transparent !important;
   box-shadow:none !important;
   border-radius:0 !important;
 }
-#capture-area.capture,
-#capture-area.capture #bgLayer{border-radius:0 !important;}
+
+/* 仅在生成图片时出现的渐变底，保证导出的 PNG 不透明 */
+#artBg{
+  position:absolute;inset:0;z-index:0;
+  opacity:0;
+  background-repeat:no-repeat;
+  background-size:cover;
+  background-position:center;
+}
+#capture-area.capture #artBg{opacity:1;}
 
 #inner{
   position:absolute;inset:0;z-index:2;overflow:hidden;
@@ -85,7 +99,7 @@ body{
 #t1,#t2{white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere;}
 #t1{font-weight:700;letter-spacing:.08em;line-height:2;}
 #t2{font-weight:400;opacity:.62;letter-spacing:.1em;line-height:2;}
-#card.vt #txt{writing-mode:vertical-rl;text-orientation:mixed;}
+#capture-area.vt #txt{writing-mode:vertical-rl;text-orientation:mixed;}
 
 /* ===== 操作区 ===== */
 #panel{flex:0 0 auto;display:flex;flex-direction:column;gap:10px;}
@@ -111,8 +125,8 @@ body{
 }
 .sw:active .dot{transform:scale(.9);}
 .sw.active .dot{box-shadow:0 0 0 2px #0f0f12,0 0 0 3.5px #fff,inset 0 0 0 1px rgba(255,255,255,.14);}
-.swn{font-size:9px;color:#7a7a86;white-space:nowrap;letter-spacing:.01em;}
-.sw.active .swn{color:#f2f2f7;}
+.swn{font-size:9px;color:#9a9aa6;white-space:nowrap;letter-spacing:.01em;}
+.sw.active .swn{color:#fff;}
 .lock{
   position:absolute;top:-3px;left:-3px;width:16px;height:16px;border-radius:50%;
   background:#0f0f12;box-shadow:0 0 0 1px rgba(255,255,255,.22);
@@ -214,13 +228,11 @@ body{
 <div id="app">
   <div id="stage">
     <div id="capture-area">
-      <div id="bgLayer"></div>
-      <div id="card">
-        <div id="inner">
-          <div id="txt">
-            <div id="t1"></div>
-            <div id="t2"></div>
-          </div>
+      <div id="artBg"></div>
+      <div id="inner">
+        <div id="txt">
+          <div id="t1"></div>
+          <div id="t2"></div>
         </div>
       </div>
     </div>
@@ -266,7 +278,7 @@ body{
 (function(){
   'use strict';
   var $=function(id){return document.getElementById(id);};
-  var stage=$('stage'),cap=$('capture-area'),bgLayer=$('bgLayer'),card=$('card'),
+  var stage=$('stage'),cap=$('capture-area'),artBg=$('artBg'),
       inner=$('inner'),txt=$('txt'),t1=$('t1'),t2=$('t2'),ta=$('ta'),
       row=$('tplRow'),saveBtn=$('save'),vBtn=$('vBtn'),
       payMask=$('payMask'),payBox=$('payBox'),payCode=$('payCode'),payErr=$('payErr'),
@@ -276,7 +288,7 @@ body{
 
   var TPL=[
     {id:'white',name:'极简白',premium:false,solid:'#f7f4ee',
-      bg:'linear-gradient(200deg,rgba(255,255,255,.55) 0%,rgba(255,255,255,0) 55%),linear-gradient(165deg,#ffffff 0%,#fdfbf6 32%,#f4eee3 66%,#e8e0d2 100%)',
+      bg:'linear-gradient(200deg,rgba(255,255,255,.5) 0%,rgba(255,255,255,0) 55%),linear-gradient(165deg,#ffffff 0%,#fdfbf6 32%,#f4eee3 66%,#e8e0d2 100%)',
       color:'#1b1b1f'},
     {id:'night',name:'暗夜黑',premium:false,solid:'#141418',
       bg:'linear-gradient(200deg,rgba(255,255,255,.09) 0%,rgba(255,255,255,0) 55%),linear-gradient(160deg,#2c2c35 0%,#1c1c23 34%,#131318 66%,#0a0a0e 100%)',
@@ -335,7 +347,7 @@ body{
   function fit(){
     var availW=Math.max(10,inner.clientWidth-PAD*2);
     var availH=Math.max(10,inner.clientHeight-PAD*2);
-    var isV=card.classList.contains('vt');
+    var isV=cap.classList.contains('vt');
     txt.style.width=isV?'auto':availW+'px';
     txt.style.height=isV?availH+'px':'auto';
     var f=Math.min(isV?availH*0.13:availW*0.15,64);
@@ -356,12 +368,9 @@ body{
     var cw=Math.floor(Math.min(w,h*0.75));
     if(cw<1) return;
     var ch=Math.round(cw*4/3);
-    var r=Math.round(cw*0.055);
     cap.style.width=cw+'px';
     cap.style.height=ch+'px';
-    cap.style.borderRadius=r+'px';
-    bgLayer.style.borderRadius=r+'px';
-    card.style.borderRadius=r+'px';
+    cap.style.borderRadius=Math.round(cw*0.055)+'px';
     inner.style.padding=PAD+'px';
     fit();
   }
@@ -377,13 +386,21 @@ body{
     fit();
   }
 
-  /* ---------- 模板 ---------- */
+  /* ---------- 模板：渐变只上到 body 与导出底层 ---------- */
   function apply(i){
     cur=i;
     var t=TPL[i];
-    bgLayer.style.background=t.bg;
-    bgLayer.style.backgroundColor=t.solid;
-    card.style.color=t.color;
+
+    document.body.style.backgroundImage=
+      'linear-gradient(rgba(10,10,14,.28),rgba(10,10,14,.28)),'+t.bg;
+    document.body.style.backgroundColor=t.solid;
+
+    artBg.style.backgroundImage=
+      'linear-gradient(rgba(255,255,255,.05),rgba(255,255,255,.05)),'+t.bg;
+    artBg.style.backgroundColor=t.solid;
+
+    cap.style.color=t.color;
+
     var kids=row.children;
     for(var k=0;k<kids.length;k++) kids[k].classList.toggle('active',k===i);
     if(kids[i]&&kids[i].scrollIntoView){
@@ -408,7 +425,7 @@ body{
   }
 
   function updateVBtn(){
-    var isV=card.classList.contains('vt');
+    var isV=cap.classList.contains('vt');
     vBtn.textContent=(isV?'竖排':'横排')+(vip?'':' 🔒');
   }
 
@@ -467,18 +484,14 @@ body{
       imageTimeout:0,removeContainer:true,
       onclone:function(doc){
         var de=doc.documentElement,b=doc.body;
-        de.style.width=vw+'px';de.style.height=vh+'px';de.style.overflow='hidden';de.style.background='transparent';
-        if(b){b.style.position='static';b.style.margin='0';b.style.padding='0';b.style.width=vw+'px';b.style.height=vh+'px';b.style.overflow='hidden';b.style.background='transparent';}
+        de.style.width=vw+'px';de.style.height=vh+'px';de.style.overflow='hidden';de.style.background='#0f0f12';
+        if(b){b.style.position='static';b.style.margin='0';b.style.padding='0';b.style.width=vw+'px';b.style.height=vh+'px';b.style.overflow='hidden';b.style.background='#0f0f12';}
         var app=doc.getElementById('app');
         if(app){app.style.height=vh+'px';app.style.overflow='hidden';}
         var ga=doc.getElementById('glowA'),gb=doc.getElementById('glowB');
         if(ga){ga.style.display='none';}
         if(gb){gb.style.display='none';}
-        var c2=doc.getElementById('capture-area');
-        if(c2){c2.style.borderRadius='0';}
-        var bl=doc.getElementById('bgLayer');
-        if(bl){bl.style.borderRadius='0';}
-        var c=doc.getElementById('card');
+        var c=doc.getElementById('capture-area');
         if(c){c.style.borderRadius='0';c.style.boxShadow='none';c.style.borderColor='transparent';}
       }
     };
@@ -494,7 +507,6 @@ body{
     var label=saveBtn.textContent;
     saveBtn.textContent='生成中…';
     cap.classList.add('capture');
-    card.classList.add('capture');
 
     var r=el.getBoundingClientRect();
     var W=Math.max(1,Math.round(r.width));
@@ -505,7 +517,6 @@ body{
 
     function restore(){
       cap.classList.remove('capture');
-      card.classList.remove('capture');
       saveBtn.disabled=false;
       saveBtn.textContent=label;
       busy=false;
@@ -530,7 +541,7 @@ body{
               restore();
               toast('生成失败，请稍后重试');
             });
-        },50);
+        },60);
       });
     });
   }
@@ -567,7 +578,7 @@ body{
 
     vBtn.addEventListener('click',function(){
       var act=function(){
-        card.classList.toggle('vt');
+        cap.classList.toggle('vt');
         updateVBtn();
         fit();
       };
