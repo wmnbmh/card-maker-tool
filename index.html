@@ -11,13 +11,16 @@
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 html,body{height:100%;overflow:hidden;background:#0f0f12;touch-action:manipulation;overscroll-behavior:none;-webkit-text-size-adjust:100%;}
 body{
-  position:fixed;inset:0;
   color:#e9e9ee;
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
   user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
 }
-#app{height:100%;display:flex;flex-direction:column;padding:14px 16px calc(12px + env(safe-area-inset-bottom));gap:12px;}
+#app{
+  height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden;
+  padding:14px 16px calc(12px + env(safe-area-inset-bottom));gap:12px;
+}
 #stage{flex:1 1 auto;min-height:0;display:flex;align-items:center;justify-content:center;}
+#capture-area{display:flex;align-items:center;justify-content:center;}
 #card{
   position:relative;overflow:hidden;isolation:isolate;
   box-shadow:0 18px 44px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.06);
@@ -127,9 +130,11 @@ body{
 <body>
 <div id="app">
   <div id="stage">
-    <div id="card">
-      <div id="inner"><div id="txt"></div></div>
-      <div id="sign">- By 橙子甜工作室</div>
+    <div id="capture-area">
+      <div id="card">
+        <div id="inner"><div id="txt"></div></div>
+        <div id="sign">- By 橙子甜工作室</div>
+      </div>
     </div>
   </div>
   <div id="panel">
@@ -158,9 +163,9 @@ body{
 (function(){
   'use strict';
   var $=function(id){return document.getElementById(id);};
-  var stage=$('stage'),card=$('card'),inner=$('inner'),txt=$('txt'),sign=$('sign');
-  var ta=$('ta'),row=$('tplRow'),saveBtn=$('save'),mask=$('mask'),modal=$('modal');
-  var codeIn=$('code'),errEl=$('err'),toastEl=$('toast');
+  var stage=$('stage'),captureArea=$('capture-area'),card=$('card'),inner=$('inner'),
+      txt=$('txt'),sign=$('sign'),ta=$('ta'),row=$('tplRow'),saveBtn=$('save'),
+      mask=$('mask'),modal=$('modal'),codeIn=$('code'),errEl=$('err'),toastEl=$('toast');
 
   var SIGN='- By 橙子甜工作室';
   var KEY='tcard.unlocked.v1', KEY_LAST='tcard.last.v1';
@@ -195,7 +200,12 @@ body{
     toastEl.textContent=msg;
     toastEl.classList.add('show');
     clearTimeout(toastTimer);
-    toastTimer=setTimeout(function(){toastEl.classList.remove('show');},1600);
+    toastTimer=setTimeout(function(){toastEl.classList.remove('show');},1700);
+  }
+
+  function isMobile(){
+    var ua=navigator.userAgent||'';
+    return /Android|iPhone|iPad|iPod|Windows Phone|MicroMessenger|HarmonyOS|Mobile/i.test(ua)||window.innerWidth<820;
   }
 
   function fit(){
@@ -214,9 +224,12 @@ body{
     if(w<10||h<10) return;
     var cw=Math.floor(Math.min(w,h*0.75));
     if(cw<1) return;
+    var ch=Math.round(cw*4/3);
     card.style.width=cw+'px';
-    card.style.height=Math.round(cw*4/3)+'px';
+    card.style.height=ch+'px';
     card.style.borderRadius=Math.round(cw*0.05)+'px';
+    captureArea.style.width=cw+'px';
+    captureArea.style.height=ch+'px';
     padX=Math.round(cw*0.085);
     padT=Math.round(cw*0.085);
     padB=Math.round(cw*0.155);
@@ -249,7 +262,9 @@ body{
     sign.style.opacity='.55';
     var kids=row.children;
     for(var k=0;k<kids.length;k++) kids[k].classList.toggle('active',k===i);
-    if(kids[i]&&kids[i].scrollIntoView) kids[i].scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+    if(kids[i]&&kids[i].scrollIntoView){
+      try{kids[i].scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});}catch(e){}
+    }
     try{localStorage.setItem(KEY_LAST,t.id);}catch(e){}
     fit();
   }
@@ -305,7 +320,7 @@ body{
           }else{
             var u=URL.createObjectURL(blob);
             a.href=u;
-            setTimeout(function(){URL.revokeObjectURL(u);},6000);
+            setTimeout(function(){URL.revokeObjectURL(u);},8000);
           }
           a.download=name;
           document.body.appendChild(a);
@@ -324,8 +339,90 @@ body{
     });
   }
 
+  function baseOptions(W,H,scale,vw,vh){
+    return {
+      scale:scale,
+      width:W,
+      height:H,
+      windowWidth:vw,
+      windowHeight:vh,
+      scrollX:0,
+      scrollY:0,
+      backgroundColor:null,
+      useCORS:true,
+      logging:false,
+      imageTimeout:0,
+      removeContainer:true,
+      onclone:function(doc){
+        var de=doc.documentElement,b=doc.body;
+        de.style.width=vw+'px';
+        de.style.height=vh+'px';
+        de.style.overflow='hidden';
+        de.style.background='transparent';
+        if(b){
+          b.style.position='static';
+          b.style.margin='0';
+          b.style.padding='0';
+          b.style.width=vw+'px';
+          b.style.height=vh+'px';
+          b.style.overflow='hidden';
+          b.style.background='transparent';
+        }
+        var app=doc.getElementById('app');
+        if(app){app.style.height=vh+'px';app.style.overflow='hidden';}
+        var c=doc.getElementById('card');
+        if(c){c.style.borderRadius='0';c.style.boxShadow='none';}
+      }
+    };
+  }
+
+  function captureFallback(W,H,scale){
+    return new Promise(function(res,rej){
+      if(!window.html2canvas){rej(new Error('lib'));return;}
+      var holder=document.createElement('div');
+      holder.style.cssText='position:fixed;left:0;top:0;z-index:99999;pointer-events:none;background:transparent;';
+      var cl=card.cloneNode(true);
+      cl.removeAttribute('id');
+      cl.classList.remove('capture');
+      cl.style.width=W+'px';
+      cl.style.height=H+'px';
+      cl.style.borderRadius='0';
+      cl.style.boxShadow='none';
+      holder.appendChild(cl);
+      document.body.appendChild(holder);
+      html2canvas(holder,{
+        scale:scale,
+        width:W,
+        height:H,
+        windowWidth:W,
+        windowHeight:H,
+        scrollX:0,
+        scrollY:0,
+        backgroundColor:null,
+        useCORS:true,
+        logging:false,
+        imageTimeout:0,
+        removeContainer:true,
+        onclone:function(doc){
+          var b=doc.body;
+          if(b){b.style.margin='0';b.style.padding='0';b.style.overflow='hidden';b.style.background='transparent';}
+        }
+      }).then(function(c){
+        if(holder.parentNode) holder.parentNode.removeChild(holder);
+        if(!c||!c.height||Math.abs(c.width/c.height-0.75)>0.03){rej(new Error('ratio'));return;}
+        res(c);
+      }).catch(function(e){
+        if(holder.parentNode) holder.parentNode.removeChild(holder);
+        rej(e);
+      });
+    });
+  }
+
   function exportImage(){
     if(busy) return;
+    var el=document.getElementById('capture-area');
+    if(!el) return;
+
     busy=true;
     saveBtn.disabled=true;
     var label=saveBtn.textContent;
@@ -336,33 +433,45 @@ body{
     if(free){sign.textContent='@橙子甜工作室 制作';sign.style.opacity='.5';}
     card.classList.add('capture');
 
-    var run=function(){
-      if(!window.html2canvas){
-        card.classList.remove('capture');
-        sign.textContent=prevText;sign.style.opacity=prevOp;
-        saveBtn.disabled=false;saveBtn.textContent=label;busy=false;
-        toast('截图库加载失败，请检查网络');
-        return;
-      }
-      html2canvas(card,{scale:3,backgroundColor:null,useCORS:true,logging:false,imageTimeout:0})
-        .then(function(canvas){
-          return download(canvas).then(function(){
-            toast(free?'已保存 · 免费版带水印':'已保存 · 高清无水印');
-          });
-        })
-        .catch(function(){
-          toast('生成失败，请稍后重试');
-        })
-        .then(function(){
-          card.classList.remove('capture');
-          sign.textContent=prevText;
-          sign.style.opacity=prevOp;
-          saveBtn.disabled=false;
-          saveBtn.textContent=label;
-          busy=false;
-        });
-    };
-    requestAnimationFrame(function(){requestAnimationFrame(function(){setTimeout(run,40);});});
+    var rect=el.getBoundingClientRect();
+    var W=Math.max(1,Math.round(rect.width));
+    var H=Math.max(1,Math.round(rect.height));
+    var vw=document.documentElement.clientWidth||window.innerWidth;
+    var vh=document.documentElement.clientHeight||window.innerHeight;
+    var scale=isMobile()?2:3;
+
+    function restore(){
+      card.classList.remove('capture');
+      sign.textContent=prevText;
+      sign.style.opacity=prevOp;
+      saveBtn.disabled=false;
+      saveBtn.textContent=label;
+      busy=false;
+    }
+
+    requestAnimationFrame(function(){
+      requestAnimationFrame(function(){
+        setTimeout(function(){
+          if(!window.html2canvas){restore();toast('截图库加载失败，请检查网络');return;}
+          html2canvas(el,baseOptions(W,H,scale,vw,vh))
+            .then(function(canvas){
+              if(!canvas||!canvas.height||Math.abs(canvas.width/canvas.height-0.75)>0.02){
+                return captureFallback(W,H,scale);
+              }
+              return canvas;
+            })
+            .then(function(canvas){
+              return download(canvas).then(function(){
+                toast(free?'已保存 · 免费版带水印':'已保存 · 高清无水印');
+              });
+            })
+            .catch(function(){
+              toast('生成失败，请稍后重试');
+            })
+            .then(restore);
+        },50);
+      });
+    });
   }
 
   function buildSwatches(){
@@ -408,8 +517,8 @@ body{
     });
     document.addEventListener('dblclick',function(e){e.preventDefault();},{passive:false});
     document.addEventListener('gesturestart',function(e){e.preventDefault();});
-    window.addEventListener('orientationchange',function(){setTimeout(layout,300);});
-    window.addEventListener('resize',layout);
+    window.addEventListener('orientationchange',function(){setTimeout(function(){layout();},320);});
+    window.addEventListener('resize',function(){layout();});
     if(window.ResizeObserver){
       try{new ResizeObserver(function(){layout();}).observe(stage);}catch(e){}
     }
