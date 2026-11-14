@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0f0f12">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>文字卡片生成器</title>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overflow:hidden;background:#0f0f12;touch-action:manipulation;overscroll-behavior:none;-webkit-text-size-adjust:100%;}
+body{
+  position:fixed;inset:0;
+  color:#e9e9ee;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
+}
+#app{height:100%;display:flex;flex-direction:column;padding:14px 16px calc(12px + env(safe-area-inset-bottom));gap:12px;}
+#stage{flex:1 1 auto;min-height:0;display:flex;align-items:center;justify-content:center;}
+#card{
+  position:relative;overflow:hidden;isolation:isolate;
+  box-shadow:0 18px 44px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.06);
+  color:#1b1b1f;
+}
+#card.capture{border-radius:0!important;box-shadow:none!important;}
+#inner{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+#txt{
+  width:100%;text-align:center;line-height:1.5;letter-spacing:.02em;
+  white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere;
+  font-family:"Songti SC","STSong",SimSun,"Noto Serif CJK SC",Georgia,"Times New Roman",serif;
+}
+#sign{
+  position:absolute;font-family:"Songti SC","STSong",SimSun,Georgia,serif;
+  opacity:.55;letter-spacing:.05em;white-space:nowrap;pointer-events:none;
+}
+#panel{flex:0 0 auto;display:flex;flex-direction:column;gap:10px;}
+#ta{
+  width:100%;height:70px;resize:none;border:1px solid rgba(255,255,255,.07);outline:none;
+  background:#17171c;border-radius:14px;color:#ececf2;
+  font-size:16px;line-height:1.5;padding:11px 13px;font-family:inherit;
+  user-select:text;-webkit-user-select:text;touch-action:pan-y;
+  transition:border-color .2s ease,background .2s ease;
+}
+#ta:focus{border-color:rgba(255,255,255,.22);background:#1b1b21;}
+#ta::placeholder{color:#5b5b66;}
+#tplRow{
+  display:flex;gap:14px;overflow-x:auto;overflow-y:hidden;padding:6px 2px 2px;
+  touch-action:pan-x;scrollbar-width:none;
+}
+#tplRow::-webkit-scrollbar{display:none;}
+.sw{flex:0 0 auto;width:42px;display:flex;flex-direction:column;align-items:center;gap:5px;background:none;border:none;font-family:inherit;}
+.dot{
+  position:relative;width:38px;height:38px;border-radius:50%;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.14);
+  transition:transform .18s ease,box-shadow .18s ease;
+}
+.sw:active .dot{transform:scale(.9);}
+.sw.active .dot{box-shadow:0 0 0 2px #0f0f12,0 0 0 3.5px #ffffff,inset 0 0 0 1px rgba(255,255,255,.14);}
+.swn{font-size:10px;color:#7a7a86;letter-spacing:.02em;white-space:nowrap;}
+.sw.active .swn{color:#f2f2f7;}
+.lock{
+  position:absolute;top:-3px;left:-3px;width:16px;height:16px;border-radius:50%;
+  background:#0f0f12;box-shadow:0 0 0 1px rgba(255,255,255,.22);
+  display:flex;align-items:center;justify-content:center;font-size:8px;line-height:1;
+}
+#save{
+  width:100%;height:48px;border:none;border-radius:15px;
+  background:linear-gradient(180deg,#fdfdfd,#e6e6ec);color:#111114;
+  font-size:15px;font-weight:600;letter-spacing:.06em;font-family:inherit;
+  box-shadow:0 8px 20px rgba(0,0,0,.45);
+  transition:transform .15s ease,opacity .15s ease;
+}
+#save:active{transform:scale(.975);opacity:.88;}
+#save:disabled{opacity:.55;transform:none;}
+#mask{
+  position:fixed;inset:0;z-index:20;padding:24px;
+  background:rgba(8,8,10,.72);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .22s ease;
+}
+#mask.show{opacity:1;pointer-events:auto;}
+#modal{
+  width:100%;max-width:330px;background:#15151a;border:1px solid rgba(255,255,255,.08);
+  border-radius:22px;padding:24px 22px 18px;
+  box-shadow:0 24px 60px rgba(0,0,0,.6);
+  transform:scale(.94) translateY(8px);
+  transition:transform .26s cubic-bezier(.2,.9,.3,1);
+}
+#mask.show #modal{transform:scale(1) translateY(0);}
+.mico{
+  width:46px;height:46px;margin:0 auto 12px;border-radius:50%;background:#232329;
+  display:flex;align-items:center;justify-content:center;font-size:18px;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);
+}
+.mtitle{text-align:center;font-size:17px;font-weight:600;color:#f4f4f8;letter-spacing:.04em;}
+.mtext{text-align:center;font-size:12.5px;line-height:1.7;color:#8b8b98;margin:8px 0 16px;}
+#code{
+  width:100%;height:46px;border-radius:12px;background:#0f0f13;
+  border:1px solid rgba(255,255,255,.1);color:#fff;text-align:center;
+  font-size:17px;letter-spacing:.28em;outline:none;font-family:inherit;
+  user-select:text;-webkit-user-select:text;touch-action:pan-y;
+}
+#code:focus{border-color:rgba(255,255,255,.28);}
+#err{font-size:11.5px;color:#ff6b6b;text-align:center;height:15px;line-height:15px;opacity:0;transition:opacity .2s ease;margin-top:6px;}
+.mbtns{display:flex;gap:10px;margin-top:14px;}
+.mbtns button{
+  flex:1;height:44px;border:none;border-radius:13px;font-size:14px;font-weight:600;
+  font-family:inherit;transition:transform .15s ease,opacity .15s ease;
+}
+.mbtns button:active{transform:scale(.97);opacity:.85;}
+#cancel{background:#232329;color:#b9b9c4;}
+#ok{background:linear-gradient(180deg,#fff,#e6e6ec);color:#111114;}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(3px)}}
+.shake{animation:shake .35s ease;}
+#toast{
+  position:fixed;left:50%;top:50%;z-index:40;
+  transform:translate(-50%,-50%) scale(.96);
+  background:rgba(28,28,34,.96);color:#f2f2f6;font-size:13px;
+  padding:11px 18px;border-radius:12px;border:1px solid rgba(255,255,255,.1);
+  opacity:0;pointer-events:none;white-space:nowrap;
+  transition:opacity .2s ease,transform .2s ease;
+}
+#toast.show{opacity:1;transform:translate(-50%,-50%) scale(1);}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="stage">
+    <div id="card">
+      <div id="inner"><div id="txt"></div></div>
+      <div id="sign">- By 橙子甜工作室</div>
+    </div>
+  </div>
+  <div id="panel">
+    <textarea id="ta" maxlength="200" spellcheck="false" placeholder="输入你想说的话…">把想说的话，留在这一张卡片上。</textarea>
+    <div id="tplRow"></div>
+    <button id="save" type="button">保存图片</button>
+  </div>
+</div>
+
+<div id="mask">
+  <div id="modal">
+    <div class="mico">🔒</div>
+    <div class="mtitle">高级模板</div>
+    <div class="mtext">此模板为高级版，请输入解锁码（测试码为：888）</div>
+    <input id="code" inputmode="numeric" maxlength="12" autocomplete="off" placeholder="请输入解锁码">
+    <div id="err">解锁码错误，请重试</div>
+    <div class="mbtns">
+      <button id="cancel" type="button">再想想</button>
+      <button id="ok" type="button">立即解锁</button>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+(function(){
+  'use strict';
+  var $=function(id){return document.getElementById(id);};
+  var stage=$('stage'),card=$('card'),inner=$('inner'),txt=$('txt'),sign=$('sign');
+  var ta=$('ta'),row=$('tplRow'),saveBtn=$('save'),mask=$('mask'),modal=$('modal');
+  var codeIn=$('code'),errEl=$('err'),toastEl=$('toast');
+
+  var SIGN='- By 橙子甜工作室';
+  var KEY='tcard.unlocked.v1', KEY_LAST='tcard.last.v1';
+
+  var TPL=[
+    {id:'white',name:'极简白',premium:false,solid:'#f6f4ef',
+      bg:'linear-gradient(160deg,#faf8f3 0%,#efeae0 55%,#e5dfd2 100%)',color:'#1b1b1f'},
+    {id:'night',name:'暗夜黑',premium:false,solid:'#141418',
+      bg:'linear-gradient(160deg,#26262c 0%,#141418 55%,#0b0b0e 100%)',color:'#f1f1f5'},
+    {id:'gray',name:'灰阶',premium:false,solid:'#2b2b31',
+      bg:'linear-gradient(150deg,#585862 0%,#31313a 50%,#1b1b20 100%)',color:'#ececf2'},
+    {id:'star',name:'璀璨星空',premium:true,solid:'#1a1b46',
+      bg:'linear-gradient(200deg,rgba(126,110,255,.55) 0%,rgba(126,110,255,0) 55%),linear-gradient(160deg,#1d1e52 0%,#2c1a60 45%,#070c22 100%)',color:'#eaefff'},
+    {id:'sunset',name:'落日余晖',premium:true,solid:'#f2603c',
+      bg:'linear-gradient(200deg,rgba(255,214,150,.55) 0%,rgba(255,214,150,0) 50%),linear-gradient(160deg,#ff9a5a 0%,#f2593c 45%,#8e2b48 100%)',color:'#fff6ee'},
+    {id:'cyber',name:'赛博霓虹',premium:true,solid:'#1a0b2e',
+      bg:'linear-gradient(45deg,rgba(0,230,255,.22) 0%,rgba(0,230,255,0) 45%),linear-gradient(305deg,rgba(255,0,140,.30) 0%,rgba(255,0,140,0) 55%),linear-gradient(160deg,#150a26 0%,#1d0b34 50%,#05060f 100%)',color:'#dcf6ff'}
+  ];
+
+  var unlocked=[];
+  try{
+    var raw=localStorage.getItem(KEY),arr=raw?JSON.parse(raw):[];
+    if(Object.prototype.toString.call(arr)==='[object Array]'){
+      unlocked=arr.filter(function(x){return typeof x==='string';});
+    }
+  }catch(e){unlocked=[];}
+
+  var cur=0,pending=null,busy=false;
+  var padT=0,padB=0,padX=0,toastTimer=0;
+
+  function toast(msg){
+    toastEl.textContent=msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer=setTimeout(function(){toastEl.classList.remove('show');},1600);
+  }
+
+  function fit(){
+    var avail=inner.clientHeight-padT-padB;
+    if(avail<=0) return;
+    var fs=Math.min(inner.clientWidth*0.155,68),guard=0;
+    txt.style.fontSize=fs.toFixed(2)+'px';
+    while(txt.getBoundingClientRect().height>avail&&fs>8&&guard++<100){
+      fs=Math.max(8,fs*0.94);
+      txt.style.fontSize=fs.toFixed(2)+'px';
+    }
+  }
+
+  function layout(){
+    var w=stage.clientWidth,h=stage.clientHeight;
+    if(w<10||h<10) return;
+    var cw=Math.floor(Math.min(w,h*0.75));
+    if(cw<1) return;
+    card.style.width=cw+'px';
+    card.style.height=Math.round(cw*4/3)+'px';
+    card.style.borderRadius=Math.round(cw*0.05)+'px';
+    padX=Math.round(cw*0.085);
+    padT=Math.round(cw*0.085);
+    padB=Math.round(cw*0.155);
+    inner.style.padding=padT+'px '+padX+'px '+padB+'px';
+    sign.style.fontSize=Math.max(7.5,cw*0.032).toFixed(1)+'px';
+    sign.style.right=Math.round(cw*0.055)+'px';
+    sign.style.bottom=Math.round(cw*0.045)+'px';
+    fit();
+  }
+
+  function isUnlocked(i){
+    return !TPL[i].premium||unlocked.indexOf(TPL[i].id)>-1;
+  }
+
+  function refreshLocks(){
+    var kids=row.children;
+    for(var i=0;i<kids.length;i++){
+      var lk=kids[i].querySelector('.lock');
+      if(lk&&isUnlocked(i)) lk.parentNode.removeChild(lk);
+    }
+  }
+
+  function apply(i){
+    cur=i;
+    var t=TPL[i];
+    card.style.background=t.bg;
+    card.style.backgroundColor=t.solid;
+    card.style.color=t.color;
+    sign.textContent=SIGN;
+    sign.style.opacity='.55';
+    var kids=row.children;
+    for(var k=0;k<kids.length;k++) kids[k].classList.toggle('active',k===i);
+    if(kids[i]&&kids[i].scrollIntoView) kids[i].scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+    try{localStorage.setItem(KEY_LAST,t.id);}catch(e){}
+    fit();
+  }
+
+  function pick(i){
+    if(!isUnlocked(i)){pending=i;openModal();return;}
+    apply(i);
+  }
+
+  function openModal(){
+    codeIn.value='';
+    errEl.style.opacity='0';
+    mask.classList.add('show');
+    setTimeout(function(){try{codeIn.focus();}catch(e){}},260);
+  }
+
+  function closeModal(){
+    mask.classList.remove('show');
+    setTimeout(function(){pending=null;},220);
+  }
+
+  function tryUnlock(){
+    if(pending===null){closeModal();return;}
+    var v=codeIn.value.trim();
+    if(v==='888'){
+      var i=pending,t=TPL[i];
+      if(t&&unlocked.indexOf(t.id)<0){
+        unlocked.push(t.id);
+        try{localStorage.setItem(KEY,JSON.stringify(unlocked));}catch(e){}
+      }
+      refreshLocks();
+      closeModal();
+      apply(i);
+      toast('解锁成功 · 已永久保存');
+    }else{
+      errEl.style.opacity='1';
+      modal.classList.remove('shake');
+      void modal.offsetWidth;
+      modal.classList.add('shake');
+      codeIn.value='';
+      try{codeIn.focus();}catch(e){}
+    }
+  }
+
+  function download(canvas){
+    return new Promise(function(res){
+      var name='文字卡片_'+Date.now()+'.png';
+      var a=document.createElement('a');
+      if(canvas.toBlob){
+        canvas.toBlob(function(blob){
+          if(!blob){
+            a.href=canvas.toDataURL('image/png');
+          }else{
+            var u=URL.createObjectURL(blob);
+            a.href=u;
+            setTimeout(function(){URL.revokeObjectURL(u);},6000);
+          }
+          a.download=name;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          res();
+        },'image/png',1);
+      }else{
+        a.href=canvas.toDataURL('image/png');
+        a.download=name;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        res();
+      }
+    });
+  }
+
+  function exportImage(){
+    if(busy) return;
+    busy=true;
+    saveBtn.disabled=true;
+    var label=saveBtn.textContent;
+    saveBtn.textContent='生成中…';
+
+    var free=!isUnlocked(cur);
+    var prevText=sign.textContent,prevOp=sign.style.opacity;
+    if(free){sign.textContent='@橙子甜工作室 制作';sign.style.opacity='.5';}
+    card.classList.add('capture');
+
+    var run=function(){
+      if(!window.html2canvas){
+        card.classList.remove('capture');
+        sign.textContent=prevText;sign.style.opacity=prevOp;
+        saveBtn.disabled=false;saveBtn.textContent=label;busy=false;
+        toast('截图库加载失败，请检查网络');
+        return;
+      }
+      html2canvas(card,{scale:3,backgroundColor:null,useCORS:true,logging:false,imageTimeout:0})
+        .then(function(canvas){
+          return download(canvas).then(function(){
+            toast(free?'已保存 · 免费版带水印':'已保存 · 高清无水印');
+          });
+        })
+        .catch(function(){
+          toast('生成失败，请稍后重试');
+        })
+        .then(function(){
+          card.classList.remove('capture');
+          sign.textContent=prevText;
+          sign.style.opacity=prevOp;
+          saveBtn.disabled=false;
+          saveBtn.textContent=label;
+          busy=false;
+        });
+    };
+    requestAnimationFrame(function(){requestAnimationFrame(function(){setTimeout(run,40);});});
+  }
+
+  function buildSwatches(){
+    TPL.forEach(function(t,i){
+      var b=document.createElement('button');
+      b.type='button';
+      b.className='sw';
+      var dot=document.createElement('span');
+      dot.className='dot';
+      dot.style.background=t.bg;
+      dot.style.backgroundColor=t.solid;
+      if(t.premium){
+        var lk=document.createElement('span');
+        lk.className='lock';
+        lk.textContent='🔒';
+        dot.appendChild(lk);
+      }
+      var nm=document.createElement('span');
+      nm.className='swn';
+      nm.textContent=t.name;
+      b.appendChild(dot);
+      b.appendChild(nm);
+      b.addEventListener('click',function(){pick(i);});
+      row.appendChild(b);
+    });
+  }
+
+  function bind(){
+    ta.addEventListener('input',function(){
+      txt.textContent=ta.value;
+      fit();
+    });
+    saveBtn.addEventListener('click',exportImage);
+    $('cancel').addEventListener('click',closeModal);
+    $('ok').addEventListener('click',tryUnlock);
+    mask.addEventListener('click',function(e){if(e.target===mask) closeModal();});
+    codeIn.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();tryUnlock();}});
+    codeIn.addEventListener('input',function(){errEl.style.opacity='0';});
+    document.addEventListener('contextmenu',function(e){
+      var t=e.target;
+      if(t&&t.closest&&(t.closest('textarea')||t.closest('input'))) return;
+      e.preventDefault();
+    });
+    document.addEventListener('dblclick',function(e){e.preventDefault();},{passive:false});
+    document.addEventListener('gesturestart',function(e){e.preventDefault();});
+    window.addEventListener('orientationchange',function(){setTimeout(layout,300);});
+    window.addEventListener('resize',layout);
+    if(window.ResizeObserver){
+      try{new ResizeObserver(function(){layout();}).observe(stage);}catch(e){}
+    }
+    if(document.fonts&&document.fonts.ready){
+      document.fonts.ready.then(function(){layout();}).catch(function(){});
+    }
+  }
+
+  function start(){
+    buildSwatches();
+    bind();
+    txt.textContent=ta.value;
+    layout();
+    var idx=0;
+    try{
+      var last=localStorage.getItem(KEY_LAST);
+      for(var i=0;i<TPL.length;i++){
+        if(TPL[i].id===last&&isUnlocked(i)){idx=i;break;}
+      }
+    }catch(e){}
+    apply(idx);
+    requestAnimationFrame(function(){layout();});
+  }
+
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',start);
+  else start();
+})();
+</script>
+</body>
+</html>
