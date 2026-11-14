@@ -3,46 +3,33 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="theme-color" content="#0a0a0f">
+<meta name="theme-color" content="#0a0a0a">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>文字卡片生成器</title>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 
-html,body{height:100%;overflow:hidden;touch-action:manipulation;overscroll-behavior:none;-webkit-text-size-adjust:100%;}
-html{background:#0a0a0f;}
+html,body{
+  height:100%;overflow:hidden;background:#0a0a0a;
+  touch-action:manipulation;overscroll-behavior:none;-webkit-text-size-adjust:100%;
+}
+html{background:#0a0a0a;}
 
 /* ===== 强制宋体 ===== */
 body,#txt,#t1,#t2,#ta,#vBtn,#save,#payBox,.swn{
-  font-family: "Noto Serif SC", "Songti SC", serif !important;
+  font-family: serif !important;
+  font-family:"Noto Serif SC","Songti SC","STSong","Source Han Serif SC",serif !important;
 }
 
 body{
-  background:#0a0a0f;
+  background:#0a0a0a;
   color:#ffffff;
   user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
 }
 
-/* ===== 弥散光 / 极光背景 ===== */
-#blob1,#blob2{
-  position:fixed;z-index:0;border-radius:50%;
-  filter:blur(100px);
-  opacity:0.5;
-  pointer-events:none;
-  will-change:transform,background-color;
-}
-#blob1{
-  width:74vw;height:74vw;left:-22vw;top:-20vw;
-  background-color:#ff7eb3;
-}
-#blob2{
-  width:74vw;height:74vw;right:-24vw;bottom:-22vw;
-  background-color:#42b0ff;
-}
-
 #app{
-  position:relative;z-index:1;
+  position:relative;
   height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden;
   padding:14px 16px calc(12px + env(safe-area-inset-bottom));gap:12px;
 }
@@ -50,21 +37,22 @@ body{
 /* ===== 预览区 ===== */
 #stage{
   flex:1 1 auto;min-height:0;display:flex;align-items:center;justify-content:center;
-  position:relative;
 }
 
-/* ===== 卡片：深色纯色 + 细边框 + 大阴影 ===== */
+/* ===== 卡片：实心背景，由 JS 写入纯色 / 渐变 / 照片 ===== */
 #capture-area{
   position:relative;
   overflow:hidden;
   isolation:isolate;
-  background: rgba(20, 20, 25, 0.95) !important;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
-  box-shadow: 0 25px 50px rgba(0,0,0,0.6) !important;
+  background:#141419;
+  background-size:cover;
+  background-position:center center;
+  background-repeat:no-repeat;
+  border:1px solid rgba(255,255,255,0.15);
+  box-shadow:0 25px 50px rgba(0,0,0,0.6);
   color:#ffffff;
 }
 #capture-area.capture{
-  background:#141419 !important;
   border-color:transparent !important;
   box-shadow:none !important;
   border-radius:0 !important;
@@ -78,11 +66,16 @@ body{
 #txt{
   flex:0 0 auto;text-align:center;
   letter-spacing:2px;
-  font-family: "Noto Serif SC", "Songti SC", serif !important;
+  font-family:"Noto Serif SC","Songti SC",serif !important;
 }
-#t1,#t2{white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere;line-height:2;}
-#t1{font-weight:700;color:#ffffff;}
-#t2{font-weight:400;color:#ffffff;opacity:0.7;}
+#t1,#t2{
+  white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere;
+  line-height:2;
+  color:#ffffff;
+  text-shadow:0 2px 4px rgba(0,0,0,0.7);
+}
+#t1{font-weight:700;}
+#t2{font-weight:400;opacity:0.7;}
 #capture-area.vt #txt{writing-mode:vertical-rl;text-orientation:mixed;}
 
 /* ===== 操作区 ===== */
@@ -108,13 +101,20 @@ body{
   transition:transform .18s ease,box-shadow .18s ease;
 }
 .sw:active .dot{transform:scale(.9);}
-.sw.active .dot{box-shadow:0 0 0 2px #0a0a0f,0 0 0 3.5px #fff,inset 0 0 0 1px rgba(255,255,255,.16);}
+.sw.active .dot{box-shadow:0 0 0 2px #0a0a0a,0 0 0 3.5px #fff,inset 0 0 0 1px rgba(255,255,255,.16);}
 .swn{font-size:9px;color:#9a9aa6;white-space:nowrap;letter-spacing:.01em;}
 .sw.active .swn{color:#fff;}
 .lock{
   position:absolute;top:-3px;left:-3px;width:16px;height:16px;border-radius:50%;
-  background:#0a0a0f;box-shadow:0 0 0 1px rgba(255,255,255,.22);
+  background:#0a0a0a;box-shadow:0 0 0 1px rgba(255,255,255,.22);
   display:flex;align-items:center;justify-content:center;font-size:8px;line-height:1;
+}
+.dot.add{
+  background:#141419;
+  border:1px dashed rgba(255,255,255,.45);
+  display:flex;align-items:center;justify-content:center;
+  color:#ffffff;font-size:20px;line-height:1;
+  box-shadow:none;
 }
 #actions{display:flex;gap:10px;}
 #vBtn{
@@ -137,7 +137,7 @@ body{
 /* ===== 付费弹窗 ===== */
 #payMask{
   position:fixed;inset:0;z-index:30;padding:22px;
-  background:rgba(6,6,8,.78);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+  background:rgba(6,6,8,.8);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
   display:flex;align-items:center;justify-content:center;
   opacity:0;pointer-events:none;transition:opacity .22s ease;
 }
@@ -206,8 +206,6 @@ body{
 </style>
 </head>
 <body>
-<div id="blob1"></div>
-<div id="blob2"></div>
 
 <div id="app">
   <div id="stage">
@@ -231,6 +229,8 @@ body{
     </div>
   </div>
 </div>
+
+<input id="fileIn" type="file" accept="image/*" style="display:none">
 
 <div id="payMask">
   <div id="payBox">
@@ -261,29 +261,36 @@ body{
 (function(){
   'use strict';
   var $=function(id){return document.getElementById(id);};
-  var stage=$('stage'),cap=$('capture-area'),blob1=$('blob1'),blob2=$('blob2'),
+  var stage=$('stage'),cap=$('capture-area'),
       inner=$('inner'),txt=$('txt'),t1=$('t1'),t2=$('t2'),ta=$('ta'),
-      row=$('tplRow'),saveBtn=$('save'),vBtn=$('vBtn'),
+      row=$('tplRow'),saveBtn=$('save'),vBtn=$('vBtn'),fileIn=$('fileIn'),
       payMask=$('payMask'),payBox=$('payBox'),payCode=$('payCode'),payErr=$('payErr'),
       shot=$('shot'),shotImg=$('shotImg'),toastEl=$('toast');
 
   var KEY_VIP='tcard_vip_v1', KEY_LAST='tcard_last_v1';
 
+  /* 3 个免费纯色 + 6 个高级渐变 */
   var TPL=[
-    {id:'white',name:'极简白',premium:false,base:'#121216',c1:'#e9e6df',c2:'#a9b6cc'},
-    {id:'night',name:'暗夜黑',premium:false,base:'#0a0a0f',c1:'#33334f',c2:'#1e2a3a'},
-    {id:'gray',name:'灰阶',premium:false,base:'#101014',c1:'#7a7a88',c2:'#3c3c48'},
-    {id:'aurora',name:'极光之境',premium:true,base:'#0a0f14',c1:'#3fe0b0',c2:'#42b0ff'},
-    {id:'deepsea',name:'深海幽蓝',premium:true,base:'#080f1a',c1:'#1b6bff',c2:'#00c6d7'},
-    {id:'nebula',name:'玫瑰星云',premium:true,base:'#120a16',c1:'#ff7eb3',c2:'#b44bff'},
-    {id:'peach',name:'蜜桃落日',premium:true,base:'#140b0e',c1:'#ff9a5a',c2:'#ff5f6d'},
-    {id:'gold',name:'鎏金黑夜',premium:true,base:'#0c0a06',c1:'#ffcf6b',c2:'#8a6a1f'},
-    {id:'mint',name:'薄荷晨雾',premium:true,base:'#07110f',c1:'#5ff2c0',c2:'#42b0ff'}
+    {id:'ink',name:'暗夜黑',premium:false,bg:'#141419'},
+    {id:'graphite',name:'石墨灰',premium:false,bg:'#2b2b31'},
+    {id:'indigo',name:'藏青',premium:false,bg:'#17263a'},
+    {id:'aurora',name:'极光之境',premium:true,
+      bg:'linear-gradient(150deg,#06222f 0%,#0d4a52 28%,#1a8a78 55%,#3fc79f 77%,#6a5cff 100%)'},
+    {id:'deepsea',name:'深海幽蓝',premium:true,
+      bg:'linear-gradient(160deg,#020a18 0%,#062a4d 30%,#0f5f86 62%,#0a2b44 100%)'},
+    {id:'nebula',name:'玫瑰星云',premium:true,
+      bg:'linear-gradient(150deg,#1a0620 0%,#5c1040 30%,#b43f77 58%,#e88ab0 80%,#2a0a2e 100%)'},
+    {id:'peach',name:'蜜桃落日',premium:true,
+      bg:'linear-gradient(155deg,#5f1b34 0%,#a63a41 30%,#d9694a 58%,#f0a06a 82%,#8c2f42 100%)'},
+    {id:'gold',name:'鎏金黑夜',premium:true,
+      bg:'linear-gradient(150deg,#08080a 0%,#171006 28%,#3d2a0d 56%,#9a7a1f 80%,#d8b74a 100%)'},
+    {id:'mint',name:'薄荷晨雾',premium:true,
+      bg:'linear-gradient(150deg,#03120f 0%,#0a4a3e 30%,#1c8a72 60%,#63d3ae 84%,#0d3d33 100%)'}
   ];
 
   var vip=false;
   try{vip=localStorage.getItem(KEY_VIP)==='1';}catch(e){}
-  var cur=0,pendingAct=null,busy=false;
+  var cur=0,pendingAct=null,busy=false,customMode=false;
   var PAD=40,toastTimer=0;
 
   function toast(msg){
@@ -351,18 +358,25 @@ body{
     fit();
   }
 
-  /* ---------- 模板：只换弥散光的颜色 ---------- */
+  function markActive(index){
+    var kids=row.children;
+    for(var k=0;k<kids.length;k++) kids[k].classList.toggle('active',k===index);
+  }
+
+  /* ---------- 模板：背景直接刷在卡片上 ---------- */
   function apply(i){
     cur=i;
+    customMode=false;
     var t=TPL[i];
-    document.body.style.backgroundColor=t.base;
-    blob1.style.backgroundColor=t.c1;
-    blob2.style.backgroundColor=t.c2;
+    cap.style.background=t.bg;
+    cap.style.backgroundSize='cover';
+    cap.style.backgroundPosition='center center';
+    cap.style.backgroundRepeat='no-repeat';
+    cap.style.color='#ffffff';
 
-    var kids=row.children;
-    for(var k=0;k<kids.length;k++) kids[k].classList.toggle('active',k===i);
-    if(kids[i]&&kids[i].scrollIntoView){
-      try{kids[i].scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});}catch(e){}
+    markActive(i);
+    if(row.children[i]&&row.children[i].scrollIntoView){
+      try{row.children[i].scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});}catch(e){}
     }
     try{localStorage.setItem(KEY_LAST,t.id);}catch(e){}
     fit();
@@ -373,10 +387,23 @@ body{
     apply(i);
   }
 
+  function applyImage(url){
+    customMode=true;
+    cap.style.background='#111114';
+    cap.style.backgroundImage='url("'+url+'")';
+    cap.style.backgroundSize='cover';
+    cap.style.backgroundPosition='center center';
+    cap.style.backgroundRepeat='no-repeat';
+    cap.style.color='#ffffff';
+    markActive(TPL.length);
+    try{localStorage.setItem(KEY_LAST,'custom');}catch(e){}
+    fit();
+  }
+
   function refreshLocks(){
     var kids=row.children;
-    for(var i=0;i<kids.length;i++){
-      var lk=kids[i].querySelector('.lock');
+    for(var i=0;i<TPL.length;i++){
+      var lk=kids[i]?kids[i].querySelector('.lock'):null;
       if(lk&&(!TPL[i].premium||vip)){lk.parentNode.removeChild(lk);}
     }
     updateVBtn();
@@ -442,13 +469,10 @@ body{
       imageTimeout:0,removeContainer:true,
       onclone:function(doc){
         var de=doc.documentElement,b=doc.body;
-        de.style.width=vw+'px';de.style.height=vh+'px';de.style.overflow='hidden';de.style.background='#0a0a0f';
-        if(b){b.style.position='static';b.style.margin='0';b.style.padding='0';b.style.width=vw+'px';b.style.height=vh+'px';b.style.overflow='hidden';b.style.background='#0a0a0f';}
+        de.style.width=vw+'px';de.style.height=vh+'px';de.style.overflow='hidden';de.style.background='#0a0a0a';
+        if(b){b.style.position='static';b.style.margin='0';b.style.padding='0';b.style.width=vw+'px';b.style.height=vh+'px';b.style.overflow='hidden';b.style.background='#0a0a0a';}
         var app=doc.getElementById('app');
         if(app){app.style.height=vh+'px';app.style.overflow='hidden';}
-        var l1=doc.getElementById('blob1'),l2=doc.getElementById('blob2');
-        if(l1){l1.style.display='none';}
-        if(l2){l2.style.display='none';}
         var c=doc.getElementById('capture-area');
         if(c){c.style.borderRadius='0';c.style.boxShadow='none';c.style.borderColor='transparent';}
       }
@@ -512,10 +536,7 @@ body{
       b.className='sw';
       var dot=document.createElement('span');
       dot.className='dot';
-      dot.style.backgroundColor=t.base;
-      dot.style.backgroundImage=
-        'radial-gradient(circle at 28% 26%,'+t.c1+' 0%,rgba(0,0,0,0) 62%),'+
-        'radial-gradient(circle at 72% 74%,'+t.c2+' 0%,rgba(0,0,0,0) 62%)';
+      dot.style.background=t.bg;
       if(t.premium&&!vip){
         var lk=document.createElement('span');
         lk.className='lock';
@@ -530,11 +551,40 @@ body{
       b.addEventListener('click',function(){pick(i);});
       row.appendChild(b);
     });
+
+    /* 自定义传图按钮 */
+    var cb=document.createElement('button');
+    cb.type='button';
+    cb.className='sw';
+    var cd=document.createElement('span');
+    cd.className='dot add';
+    cd.textContent='+';
+    var cn=document.createElement('span');
+    cn.className='swn';
+    cn.textContent='自定义';
+    cb.appendChild(cd);
+    cb.appendChild(cn);
+    cb.addEventListener('click',function(){try{fileIn.click();}catch(e){}});
+    row.appendChild(cb);
   }
 
   function bind(){
     ta.addEventListener('input',render);
     saveBtn.addEventListener('click',exportImage);
+
+    fileIn.addEventListener('change',function(){
+      var f=fileIn.files&&fileIn.files[0];
+      if(!f) return;
+      if(!/^image\//.test(f.type||'')){toast('请选择图片文件');fileIn.value='';return;}
+      var fr=new FileReader();
+      fr.onload=function(){
+        applyImage(String(fr.result||''));
+        toast('已设置为卡片背景');
+        try{fileIn.value='';}catch(e){}
+      };
+      fr.onerror=function(){toast('图片读取失败，请重试');try{fileIn.value='';}catch(e){}};
+      fr.readAsDataURL(f);
+    });
 
     vBtn.addEventListener('click',function(){
       var act=function(){
