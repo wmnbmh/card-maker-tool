@@ -9,39 +9,32 @@
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+
+/* ===== 强制衬线体（宋体） ===== */
+body,#txt,#t1,#t2,#ta,#vBtn,#save,#payBox,.swn{
+  font-family:"Noto Serif SC","Songti SC","STSong","Source Han Serif SC",SimSun,Georgia,serif !important;
+}
+
 html,body{height:100%;overflow:hidden;background:#0f0f12;touch-action:manipulation;overscroll-behavior:none;-webkit-text-size-adjust:100%;}
 body{
   color:#e9e9ee;
-  font-family:'Songti SC','Noto Serif SC','Source Han Serif SC',STSong,SimSun,Georgia,'Times New Roman',serif;
   user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
 }
 
-/* ===== 背景光晕 ===== */
-#bg{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;background:#0f0f12;}
-#bg .blob{position:absolute;border-radius:50%;filter:blur(64px);will-change:transform;}
-#bg .b1{
-  width:72vw;height:72vw;left:-24vw;top:-20vw;
-  background:radial-gradient(circle at 40% 40%,rgba(104,92,255,.55) 0%,rgba(104,92,255,0) 70%);
-  animation:fl1 22s ease-in-out infinite alternate;
+/* ===== 背景模糊光斑（两个圆形 div） ===== */
+#glowA,#glowB{
+  position:fixed;z-index:0;border-radius:50%;
+  filter:blur(80px);
+  pointer-events:none;
 }
-#bg .b2{
-  width:66vw;height:66vw;right:-26vw;bottom:-14vw;
-  background:radial-gradient(circle at 60% 40%,rgba(0,198,178,.45) 0%,rgba(0,198,178,0) 70%);
-  animation:fl2 26s ease-in-out infinite alternate;
+#glowA{
+  width:72vw;height:72vw;left:-22vw;top:-16vw;
+  background:radial-gradient(circle at 45% 45%,rgba(104,92,255,.60) 0%,rgba(104,92,255,0) 70%);
 }
-#bg .b3{
-  width:48vw;height:48vw;left:24vw;top:36vh;
-  background:radial-gradient(circle,rgba(255,96,164,.32) 0%,rgba(255,96,164,0) 70%);
-  animation:fl3 30s ease-in-out infinite alternate;
+#glowB{
+  width:68vw;height:68vw;right:-24vw;bottom:-16vw;
+  background:radial-gradient(circle at 55% 45%,rgba(0,198,178,.50) 0%,rgba(0,198,178,0) 70%);
 }
-#bg .b4{
-  width:34vw;height:34vw;right:8vw;top:6vh;
-  background:radial-gradient(circle,rgba(255,196,110,.22) 0%,rgba(255,196,110,0) 70%);
-  animation:fl1 34s ease-in-out infinite alternate-reverse;
-}
-@keyframes fl1{from{transform:translate3d(0,0,0) scale(1)}to{transform:translate3d(5vw,4vh,0) scale(1.12)}}
-@keyframes fl2{from{transform:translate3d(0,0,0) scale(1.05)}to{transform:translate3d(-6vw,-4vh,0) scale(1)}}
-@keyframes fl3{from{transform:translate3d(0,0,0) scale(.95)}to{transform:translate3d(4vw,-5vh,0) scale(1.1)}}
 
 #app{
   position:relative;z-index:1;
@@ -59,28 +52,27 @@ body{
   background:radial-gradient(circle,rgba(255,255,255,.08) 0%,rgba(255,255,255,0) 70%);
   filter:blur(18px);pointer-events:none;
 }
-#capture-area{position:relative;display:flex;align-items:center;justify-content:center;}
+#capture-area{position:relative;}
+#bgLayer{position:absolute;inset:0;z-index:0;overflow:hidden;}
+
+/* ===== 卡片：毛玻璃 + 发光边框 + 阴影（强制） ===== */
 #card{
-  position:relative;overflow:hidden;isolation:isolate;
-  border:1px solid rgba(255,255,255,.22);
-  box-shadow:
-    0 0 0 1px rgba(255,255,255,.10),
-    0 24px 52px rgba(0,0,0,.55),
-    0 0 48px rgba(150,170,255,.16),
-    inset 0 1px 0 rgba(255,255,255,.22);
+  position:absolute;inset:0;z-index:1;overflow:hidden;isolation:isolate;
+  background:rgba(255, 255, 255, 0.05) !important;
+  -webkit-backdrop-filter:blur(15px) !important;
+  backdrop-filter: blur(15px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5) !important;
   color:#1b1b1f;
 }
 #card.capture{
-  border-radius:0!important;
-  box-shadow:none!important;
-  border-color:transparent!important;
+  border-color:transparent !important;
+  box-shadow:none !important;
+  border-radius:0 !important;
 }
-#glass{
-  position:absolute;inset:0;z-index:1;
-  background:rgba(255,255,255,.1);
-  -webkit-backdrop-filter:blur(15px) saturate(120%);
-  backdrop-filter:blur(15px) saturate(120%);
-}
+#capture-area.capture,
+#capture-area.capture #bgLayer{border-radius:0 !important;}
+
 #inner{
   position:absolute;inset:0;z-index:2;overflow:hidden;
   padding:40px;
@@ -88,7 +80,7 @@ body{
 }
 #txt{
   flex:0 0 auto;text-align:center;
-  font-family:'Songti SC','Noto Serif SC','Source Han Serif SC',STSong,SimSun,Georgia,'Times New Roman',serif;
+  font-family:"Noto Serif SC","Songti SC","STSong",serif !important;
 }
 #t1,#t2{white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere;}
 #t1{font-weight:700;letter-spacing:.08em;line-height:2;}
@@ -100,7 +92,7 @@ body{
 #ta{
   width:100%;height:68px;resize:none;border:1px solid rgba(255,255,255,.07);outline:none;
   background:#17171c;border-radius:14px;color:#ececf2;
-  font-size:16px;line-height:1.5;padding:11px 13px;font-family:inherit;
+  font-size:16px;line-height:1.5;padding:11px 13px;
   user-select:text;-webkit-user-select:text;touch-action:pan-y;
   transition:border-color .2s ease,background .2s ease;
 }
@@ -111,7 +103,7 @@ body{
   touch-action:pan-x;scrollbar-width:none;
 }
 #tplRow::-webkit-scrollbar{display:none;}
-.sw{flex:0 0 auto;width:42px;display:flex;flex-direction:column;align-items:center;gap:5px;background:none;border:none;font-family:inherit;}
+.sw{flex:0 0 auto;width:42px;display:flex;flex-direction:column;align-items:center;gap:5px;background:none;border:none;}
 .dot{
   position:relative;width:38px;height:38px;border-radius:50%;
   box-shadow:inset 0 0 0 1px rgba(255,255,255,.14);
@@ -130,14 +122,14 @@ body{
 #vBtn{
   flex:0 0 auto;height:48px;padding:0 16px;border-radius:15px;
   background:#17171c;border:1px solid rgba(255,255,255,.09);color:#dcdce4;
-  font-size:14px;font-weight:600;font-family:inherit;letter-spacing:.03em;
+  font-size:14px;font-weight:600;letter-spacing:.03em;
   transition:transform .15s ease,opacity .15s ease;
 }
 #vBtn:active{transform:scale(.97);opacity:.85;}
 #save{
   flex:1 1 auto;height:48px;border:none;border-radius:15px;
   background:linear-gradient(180deg,#fdfdfd,#e6e6ec);color:#111114;
-  font-size:15px;font-weight:600;letter-spacing:.06em;font-family:inherit;
+  font-size:15px;font-weight:600;letter-spacing:.06em;
   box-shadow:0 8px 20px rgba(0,0,0,.45);
   transition:transform .15s ease,opacity .15s ease;
 }
@@ -174,7 +166,7 @@ body{
 #payCode{
   width:100%;height:46px;border-radius:12px;background:#0f0f13;
   border:1px solid rgba(255,255,255,.1);color:#fff;text-align:center;
-  font-size:17px;letter-spacing:.24em;outline:none;font-family:inherit;
+  font-size:17px;letter-spacing:.24em;outline:none;
   user-select:text;-webkit-user-select:text;touch-action:pan-y;
 }
 #payCode:focus{border-color:rgba(255,255,255,.3);}
@@ -182,7 +174,7 @@ body{
 .pbtns{display:flex;gap:10px;margin-top:10px;}
 .pbtns button{
   flex:1;height:44px;border:none;border-radius:13px;font-size:14px;font-weight:600;
-  font-family:inherit;transition:transform .15s ease,opacity .15s ease;
+  transition:transform .15s ease,opacity .15s ease;
 }
 .pbtns button:active{transform:scale(.97);opacity:.85;}
 #payOk{background:linear-gradient(180deg,#fff,#e6e6ec);color:#111114;}
@@ -216,18 +208,14 @@ body{
 </style>
 </head>
 <body>
-<div id="bg">
-  <span class="blob b1"></span>
-  <span class="blob b2"></span>
-  <span class="blob b3"></span>
-  <span class="blob b4"></span>
-</div>
+<div id="glowA"></div>
+<div id="glowB"></div>
 
 <div id="app">
   <div id="stage">
     <div id="capture-area">
+      <div id="bgLayer"></div>
       <div id="card">
-        <div id="glass"></div>
         <div id="inner">
           <div id="txt">
             <div id="t1"></div>
@@ -278,7 +266,7 @@ body{
 (function(){
   'use strict';
   var $=function(id){return document.getElementById(id);};
-  var stage=$('stage'),cap=$('capture-area'),card=$('card'),glass=$('glass'),
+  var stage=$('stage'),cap=$('capture-area'),bgLayer=$('bgLayer'),card=$('card'),
       inner=$('inner'),txt=$('txt'),t1=$('t1'),t2=$('t2'),ta=$('ta'),
       row=$('tplRow'),saveBtn=$('save'),vBtn=$('vBtn'),
       payMask=$('payMask'),payBox=$('payBox'),payCode=$('payCode'),payErr=$('payErr'),
@@ -289,31 +277,31 @@ body{
   var TPL=[
     {id:'white',name:'极简白',premium:false,solid:'#f7f4ee',
       bg:'linear-gradient(200deg,rgba(255,255,255,.55) 0%,rgba(255,255,255,0) 55%),linear-gradient(165deg,#ffffff 0%,#fdfbf6 32%,#f4eee3 66%,#e8e0d2 100%)',
-      color:'#1b1b1f',glass:'rgba(255,255,255,.42)'},
+      color:'#1b1b1f'},
     {id:'night',name:'暗夜黑',premium:false,solid:'#141418',
       bg:'linear-gradient(200deg,rgba(255,255,255,.09) 0%,rgba(255,255,255,0) 55%),linear-gradient(160deg,#2c2c35 0%,#1c1c23 34%,#131318 66%,#0a0a0e 100%)',
-      color:'#f4f4f7',glass:'rgba(255,255,255,.08)'},
+      color:'#f4f4f7'},
     {id:'gray',name:'灰阶',premium:false,solid:'#2b2b31',
       bg:'linear-gradient(200deg,rgba(255,255,255,.13) 0%,rgba(255,255,255,0) 58%),linear-gradient(160deg,#71717d 0%,#50505a 32%,#34343c 66%,#1c1c22 100%)',
-      color:'#f0f0f4',glass:'rgba(255,255,255,.1)'},
+      color:'#f0f0f4'},
     {id:'aurora',name:'极光之境',premium:true,solid:'#0f3b4a',
       bg:'linear-gradient(200deg,rgba(180,255,235,.22) 0%,rgba(180,255,235,0) 58%),linear-gradient(150deg,#06222f 0%,#0d4a52 28%,#1a8a78 54%,#3fc79f 76%,#6a5cff 100%)',
-      color:'#f2fffb',glass:'rgba(255,255,255,.1)'},
+      color:'#f2fffb'},
     {id:'deepsea',name:'深海幽蓝',premium:true,solid:'#0a2140',
       bg:'linear-gradient(200deg,rgba(120,200,255,.2) 0%,rgba(120,200,255,0) 62%),linear-gradient(160deg,#020a18 0%,#062a4d 30%,#0f5f86 62%,#0a2b44 100%)',
-      color:'#eaf6ff',glass:'rgba(255,255,255,.1)'},
+      color:'#eaf6ff'},
     {id:'nebula',name:'玫瑰星云',premium:true,solid:'#3a0f33',
       bg:'linear-gradient(210deg,rgba(255,190,230,.22) 0%,rgba(255,190,230,0) 58%),linear-gradient(150deg,#1a0620 0%,#5c1040 30%,#b43f77 58%,#e88ab0 80%,#2a0a2e 100%)',
-      color:'#fff0f7',glass:'rgba(255,255,255,.1)'},
+      color:'#fff0f7'},
     {id:'peach',name:'蜜桃落日',premium:true,solid:'#a83a44',
       bg:'linear-gradient(200deg,rgba(255,225,180,.28) 0%,rgba(255,225,180,0) 58%),linear-gradient(155deg,#5f1b34 0%,#a63a41 30%,#d9694a 58%,#f0a06a 82%,#8c2f42 100%)',
-      color:'#fff4ec',glass:'rgba(255,255,255,.12)'},
+      color:'#fff4ec'},
     {id:'gold',name:'鎏金黑夜',premium:true,solid:'#1a1408',
       bg:'linear-gradient(200deg,rgba(255,220,140,.18) 0%,rgba(255,220,140,0) 55%),linear-gradient(150deg,#08080a 0%,#171006 28%,#3d2a0d 56%,#9a7a1f 80%,#d8b74a 100%)',
-      color:'#fff6da',glass:'rgba(255,255,255,.08)'},
+      color:'#fff6da'},
     {id:'mint',name:'薄荷晨雾',premium:true,solid:'#0b3a30',
       bg:'linear-gradient(200deg,rgba(200,255,235,.22) 0%,rgba(200,255,235,0) 58%),linear-gradient(150deg,#03120f 0%,#0a4a3e 30%,#1c8a72 60%,#63d3ae 84%,#0d3d33 100%)',
-      color:'#ecfff9',glass:'rgba(255,255,255,.1)'}
+      color:'#ecfff9'}
   ];
 
   var vip=false;
@@ -368,11 +356,12 @@ body{
     var cw=Math.floor(Math.min(w,h*0.75));
     if(cw<1) return;
     var ch=Math.round(cw*4/3);
+    var r=Math.round(cw*0.055);
     cap.style.width=cw+'px';
     cap.style.height=ch+'px';
-    card.style.width=cw+'px';
-    card.style.height=ch+'px';
-    card.style.borderRadius=Math.round(cw*0.055)+'px';
+    cap.style.borderRadius=r+'px';
+    bgLayer.style.borderRadius=r+'px';
+    card.style.borderRadius=r+'px';
     inner.style.padding=PAD+'px';
     fit();
   }
@@ -392,10 +381,9 @@ body{
   function apply(i){
     cur=i;
     var t=TPL[i];
-    card.style.background=t.bg;
-    card.style.backgroundColor=t.solid;
+    bgLayer.style.background=t.bg;
+    bgLayer.style.backgroundColor=t.solid;
     card.style.color=t.color;
-    glass.style.background=t.glass;
     var kids=row.children;
     for(var k=0;k<kids.length;k++) kids[k].classList.toggle('active',k===i);
     if(kids[i]&&kids[i].scrollIntoView){
@@ -483,10 +471,15 @@ body{
         if(b){b.style.position='static';b.style.margin='0';b.style.padding='0';b.style.width=vw+'px';b.style.height=vh+'px';b.style.overflow='hidden';b.style.background='transparent';}
         var app=doc.getElementById('app');
         if(app){app.style.height=vh+'px';app.style.overflow='hidden';}
+        var ga=doc.getElementById('glowA'),gb=doc.getElementById('glowB');
+        if(ga){ga.style.display='none';}
+        if(gb){gb.style.display='none';}
+        var c2=doc.getElementById('capture-area');
+        if(c2){c2.style.borderRadius='0';}
+        var bl=doc.getElementById('bgLayer');
+        if(bl){bl.style.borderRadius='0';}
         var c=doc.getElementById('card');
         if(c){c.style.borderRadius='0';c.style.boxShadow='none';c.style.borderColor='transparent';}
-        var bg=doc.getElementById('bg');
-        if(bg){bg.style.display='none';}
       }
     };
   }
@@ -500,6 +493,7 @@ body{
     saveBtn.disabled=true;
     var label=saveBtn.textContent;
     saveBtn.textContent='生成中…';
+    cap.classList.add('capture');
     card.classList.add('capture');
 
     var r=el.getBoundingClientRect();
@@ -510,6 +504,7 @@ body{
     var scale=isMobile()?2:3;
 
     function restore(){
+      cap.classList.remove('capture');
       card.classList.remove('capture');
       saveBtn.disabled=false;
       saveBtn.textContent=label;
