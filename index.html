@@ -269,28 +269,22 @@ body{
 
   var KEY_VIP='tcard_vip_v1', KEY_LAST='tcard_last_v1';
 
-  /* 3 个免费纯色 + 6 个高级渐变 */
+  /* 3 个免费纯色 + 3 个高级渐变 */
   var TPL=[
     {id:'ink',name:'暗夜黑',premium:false,bg:'#141419'},
     {id:'graphite',name:'石墨灰',premium:false,bg:'#2b2b31'},
     {id:'indigo',name:'藏青',premium:false,bg:'#17263a'},
     {id:'aurora',name:'极光之境',premium:true,
       bg:'linear-gradient(150deg,#06222f 0%,#0d4a52 28%,#1a8a78 55%,#3fc79f 77%,#6a5cff 100%)'},
-    {id:'deepsea',name:'深海幽蓝',premium:true,
-      bg:'linear-gradient(160deg,#020a18 0%,#062a4d 30%,#0f5f86 62%,#0a2b44 100%)'},
     {id:'nebula',name:'玫瑰星云',premium:true,
       bg:'linear-gradient(150deg,#1a0620 0%,#5c1040 30%,#b43f77 58%,#e88ab0 80%,#2a0a2e 100%)'},
-    {id:'peach',name:'蜜桃落日',premium:true,
-      bg:'linear-gradient(155deg,#5f1b34 0%,#a63a41 30%,#d9694a 58%,#f0a06a 82%,#8c2f42 100%)'},
     {id:'gold',name:'鎏金黑夜',premium:true,
-      bg:'linear-gradient(150deg,#08080a 0%,#171006 28%,#3d2a0d 56%,#9a7a1f 80%,#d8b74a 100%)'},
-    {id:'mint',name:'薄荷晨雾',premium:true,
-      bg:'linear-gradient(150deg,#03120f 0%,#0a4a3e 30%,#1c8a72 60%,#63d3ae 84%,#0d3d33 100%)'}
+      bg:'linear-gradient(150deg,#08080a 0%,#171006 30%,#5a3e10 62%,#c9a227 100%)'}
   ];
 
   var vip=false;
   try{vip=localStorage.getItem(KEY_VIP)==='1';}catch(e){}
-  var cur=0,pendingAct=null,busy=false,customMode=false;
+  var cur=0,pendingAct=null,busy=false;
   var PAD=40,toastTimer=0;
 
   function toast(msg){
@@ -366,7 +360,6 @@ body{
   /* ---------- 模板：背景直接刷在卡片上 ---------- */
   function apply(i){
     cur=i;
-    customMode=false;
     var t=TPL[i];
     cap.style.background=t.bg;
     cap.style.backgroundSize='cover';
@@ -388,7 +381,6 @@ body{
   }
 
   function applyImage(url){
-    customMode=true;
     cap.style.background='#111114';
     cap.style.backgroundImage='url("'+url+'")';
     cap.style.backgroundSize='cover';
@@ -400,12 +392,18 @@ body{
     fit();
   }
 
+  function openPicker(){
+    try{fileIn.click();}catch(e){}
+  }
+
   function refreshLocks(){
     var kids=row.children;
     for(var i=0;i<TPL.length;i++){
       var lk=kids[i]?kids[i].querySelector('.lock'):null;
       if(lk&&(!TPL[i].premium||vip)){lk.parentNode.removeChild(lk);}
     }
+    var ck=kids[TPL.length]?kids[TPL.length].querySelector('.lock'):null;
+    if(ck&&vip){ck.parentNode.removeChild(ck);}
     updateVBtn();
   }
 
@@ -552,19 +550,28 @@ body{
       row.appendChild(b);
     });
 
-    /* 自定义传图按钮 */
+    /* 自定义传图按钮（带锁） */
     var cb=document.createElement('button');
     cb.type='button';
     cb.className='sw';
     var cd=document.createElement('span');
     cd.className='dot add';
     cd.textContent='+';
+    if(!vip){
+      var clk=document.createElement('span');
+      clk.className='lock';
+      clk.textContent='🔒';
+      cd.appendChild(clk);
+    }
     var cn=document.createElement('span');
     cn.className='swn';
     cn.textContent='自定义';
     cb.appendChild(cd);
     cb.appendChild(cn);
-    cb.addEventListener('click',function(){try{fileIn.click();}catch(e){}});
+    cb.addEventListener('click',function(){
+      if(!vip){openPay(openPicker);return;}
+      openPicker();
+    });
     row.appendChild(cb);
   }
 
@@ -575,7 +582,7 @@ body{
     fileIn.addEventListener('change',function(){
       var f=fileIn.files&&fileIn.files[0];
       if(!f) return;
-      if(!/^image\//.test(f.type||'')){toast('请选择图片文件');fileIn.value='';return;}
+      if(!/^image\//.test(f.type||'')){toast('请选择图片文件');try{fileIn.value='';}catch(e){}return;}
       var fr=new FileReader();
       fr.onload=function(){
         applyImage(String(fr.result||''));
